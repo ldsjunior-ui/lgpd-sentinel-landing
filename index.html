@@ -598,42 +598,31 @@
     });
   });
 
-  // Email form — Brevo integration
-  document.getElementById('emailForm').addEventListener('submit', async function(e) {
+  // Email form — zero-dependency capture via mailto
+  // Contatos são adicionados à lista Brevo pelo GitHub Actions subscriber-add.yml
+  // (workflow_dispatch disparado manualmente ou via GitHub CLI)
+  document.getElementById('emailForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    const email = document.getElementById('emailInput').value;
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email) return;
     const btn = this.querySelector('button');
-    btn.textContent = 'Aguarde...';
-    btn.disabled = true;
 
-    try {
-      const res = await fetch('https://api.brevo.com/v3/contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': 'BREVO_API_KEY_PLACEHOLDER'
-        },
-        body: JSON.stringify({
-          email: email,
-          listIds: [BREVO_LIST_ID_PLACEHOLDER],
-          updateEnabled: true,
-          attributes: { SOURCE: 'landing-page' }
-        })
-      });
+    // Open mailto — leads chegam à caixa de entrada e são adicionados ao Brevo
+    const subject = encodeURIComponent('Early Access — LGPD Sentinel Cloud');
+    const body    = encodeURIComponent(
+      `Quero receber atualizações do LGPD Sentinel AI.\n\nEmail: ${email}`
+    );
+    window.open(`mailto:leonardobergonzi20@gmail.com?subject=${subject}&body=${body}`);
 
-      if (res.ok || res.status === 204) {
-        btn.textContent = '✅ Inscrito!';
-        btn.style.background = 'var(--green)';
-        document.getElementById('emailInput').value = '';
-      } else {
-        throw new Error('API error');
-      }
-    } catch(err) {
-      // Fallback: open mailto
-      btn.textContent = '→ Quero acesso';
-      btn.disabled = false;
-      window.location.href = `mailto:ldsjunior.ui@gmail.com?subject=Early Access LGPD Sentinel Cloud&body=Email: ${email}`;
-    }
+    btn.textContent = '✅ Obrigado! Abrindo seu e-mail…';
+    btn.style.background = 'var(--green)';
+    document.getElementById('emailInput').value = '';
+
+    // Reset button after 4s
+    setTimeout(() => {
+      btn.textContent = '→ Quero acesso antecipado';
+      btn.style.background = '';
+    }, 4000);
   });
 </script>
 

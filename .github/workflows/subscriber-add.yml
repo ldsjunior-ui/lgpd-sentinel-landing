@@ -1,0 +1,82 @@
+name: LGPD Sentinel — Add Subscriber + Send Welcome Email
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'Subscriber email address'
+        required: true
+        type: string
+      name:
+        description: 'Subscriber first name (optional)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  add-and-welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add contact to Brevo list and send Day-0 welcome
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          EMAIL: ${{ inputs.email }}
+          NAME:  ${{ inputs.name }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request, urllib.error
+
+          API_KEY  = os.environ["BREVO_API_KEY"]
+          EMAIL    = os.environ["EMAIL"].strip()
+          NAME     = os.environ.get("NAME", "").strip()
+          LIST_ID  = 9   # LGPD Sentinel Leads
+          TMPL_ID  = 2   # Day-0 Welcome template
+
+          BASE_URL = "https://api.brevo.com/v3"
+          HEADERS  = {
+              "accept":       "application/json",
+              "content-type": "application/json",
+              "api-key":      API_KEY,
+          }
+
+          def post(path, payload):
+              data = json.dumps(payload).encode()
+              req  = urllib.request.Request(
+                  f"{BASE_URL}{path}", data=data, headers=HEADERS, method="POST"
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      body = r.read()
+                      return json.loads(body) if body else {}
+              except urllib.error.HTTPError as e:
+                  body = e.read().decode()
+                  # 400 = already exists, that's OK
+                  if e.code == 400 and "already" in body.lower():
+                      print(f"  ℹ  Contact already exists (updating list membership)")
+                      return {"existing": True}
+                  print(f"  ✗  POST {path} → {e.code}: {body}")
+                  raise
+
+          # 1 — Add / update contact in Brevo
+          print(f"Adding {EMAIL} to Brevo list {LIST_ID} …")
+          attrs = {"SOURCE": "landing-page"}
+          if NAME:
+              attrs["FIRSTNAME"] = NAME
+          post("/contacts", {
+              "email":         EMAIL,
+              "listIds":       [LIST_ID],
+              "updateEnabled": True,
+              "attributes":    attrs,
+          })
+          print("  ✔  Contact added/updated")
+
+          # 2 — Send Day-0 welcome email
+          print(f"Sending Day-0 welcome (template {TMPL_ID}) to {EMAIL} …")
+          to_entry = {"email": EMAIL}
+          if NAME:
+              to_entry["name"] = NAME
+          post("/smtp/email", {"to": [to_entry], "templateId": TMPL_ID})
+          print("  ✔  Welcome email sent")
+
+          print("\nDone ✓")
+          PYEOF

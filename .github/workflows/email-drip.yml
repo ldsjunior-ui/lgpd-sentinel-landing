@@ -1,0 +1,117 @@
+name: LGPD Sentinel — Email Drip Sequence
+
+on:
+  schedule:
+    # Runs daily at 10:00 AM UTC (07:00 AM Brasília)
+    - cron: '0 10 * * *'
+  workflow_dispatch:   # allow manual trigger for testing
+
+jobs:
+  send-drip-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run drip email script
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, datetime, urllib.request, urllib.error
+
+          API_KEY   = os.environ["BREVO_API_KEY"]
+          LIST_ID   = 9      # LGPD Sentinel Leads
+          BASE_URL  = "https://api.brevo.com/v3"
+
+          # Day → template ID mapping
+          # Template IDs were created by brevo_lgpd_setup.py
+          DRIP = {
+              0:  2,   # Day 0  – Welcome + install guide (sent immediately on subscribe)
+              3:  3,   # Day 3  – First audit walkthrough
+              7:  4,   # Day 7  – 5 LGPD mistakes
+              14: 5,   # Day 14 – DPO use cases
+              21: 6,   # Day 21 – Cloud early access
+          }
+
+          HEADERS = {
+              "accept":        "application/json",
+              "content-type":  "application/json",
+              "api-key":       API_KEY,
+          }
+
+          def api_get(path):
+              req = urllib.request.Request(f"{BASE_URL}{path}", headers=HEADERS)
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  return json.loads(r.read())
+
+          def api_post(path, payload):
+              data = json.dumps(payload).encode()
+              req  = urllib.request.Request(
+                  f"{BASE_URL}{path}", data=data, headers=HEADERS, method="POST"
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      return json.loads(r.read()) if r.read() else {}
+              except urllib.error.HTTPError as e:
+                  body = e.read().decode()
+                  print(f"  POST {path} → {e.code}: {body}")
+                  return None
+
+          def send_template(email, template_id, first_name=""):
+              payload = {
+                  "to": [{"email": email, "name": first_name or email}],
+                  "templateId": template_id,
+              }
+              result = api_post("/smtp/email", payload)
+              if result is not None:
+                  print(f"  ✔  Sent template {template_id} → {email}")
+              return result
+
+          def days_since(date_str):
+              """Return integer days since ISO 8601 date string."""
+              dt = datetime.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+              now = datetime.datetime.now(datetime.timezone.utc)
+              return (now - dt).days
+
+          # ── Fetch all contacts in the LGPD Sentinel Leads list ─────────────
+          print("Fetching contacts from list", LIST_ID, "...")
+          offset    = 0
+          limit     = 500
+          contacts  = []
+          while True:
+              data = api_get(
+                  f"/contacts?limit={limit}&offset={offset}"
+                  f"&sort=desc&listId={LIST_ID}"
+              )
+              batch = data.get("contacts", [])
+              contacts.extend(batch)
+              if len(batch) < limit:
+                  break
+              offset += limit
+
+          print(f"Found {len(contacts)} contacts.")
+
+          today     = datetime.datetime.now(datetime.timezone.utc).date()
+          sent      = 0
+          skipped   = 0
+
+          for c in contacts:
+              email      = c.get("email", "")
+              created_at = c.get("createdAt", "")
+              attrs      = c.get("attributes", {})
+              first_name = attrs.get("FIRSTNAME", "")
+
+              if not email or not created_at:
+                  skipped += 1
+                  continue
+
+              age = days_since(created_at)
+
+              if age in DRIP:
+                  template_id = DRIP[age]
+                  print(f"  → {email}  (day {age}, template {template_id})")
+                  send_template(email, template_id, first_name)
+                  sent += 1
+              else:
+                  skipped += 1
+
+          print(f"\nDone. Emails sent: {sent}  |  Skipped: {skipped}")
+          PYEOF
