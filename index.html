@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LGPD Sentinel AI — Auditoria LGPD com IA local, grátis e open source</title>
+  <meta name="description" content="Ferramenta open source de auditoria LGPD com IA 100% local. Gere Data Mapping, RIPD/DPIA e respostas de titulares em minutos. Sem enviar dados para a nuvem." />
+  <meta name="keywords" content="LGPD, auditoria LGPD, compliance LGPD, DPO, RIPD, DPIA, IA local, open source, privacidade de dados" />
+  <meta property="og:title" content="LGPD Sentinel AI — Auditoria LGPD com IA local" />
+  <meta property="og:description" content="Substitua dias de trabalho manual por minutos. IA 100% local — seus dados nunca saem do seu servidor." />
+  <meta property="og:image" content="https://opengraph.githubassets.com/1/ldsjunior-ui/lgpd-sentinel-ai" />
+  <meta property="og:url" content="https://lgpdsentinel.vercel.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e;
+      --bg2: #0d1526;
+      --bg3: #111827;
+      --border: rgba(99,179,237,0.15);
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --green: #10b981;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --card: rgba(255,255,255,0.04);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(10,15,30,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: 1.1rem; text-decoration: none; color: var(--text); }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: .9rem; text-decoration: none; transition: all .2s; cursor: pointer; border: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,.4); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(16,185,129,.4); }
+    .btn-lg { padding: .8rem 2rem; font-size: 1rem; border-radius: 10px; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 90vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 4rem 1.5rem;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3);
+      color: var(--accent); border-radius: 999px; padding: .3rem .9rem; font-size: .8rem; font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .badge .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; max-width: 820px; }
+    h1 .grad { background: linear-gradient(135deg, #60a5fa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-sub { margin-top: 1.2rem; font-size: clamp(1rem, 2vw, 1.2rem); color: var(--muted); max-width: 620px; }
+    .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 2.5rem; }
+
+    .stars-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: .4rem .8rem; font-size: .85rem; color: var(--muted);
+      margin-top: 2rem;
+    }
+    .stars-badge ⭐ { font-size: 1rem; }
+
+    /* ── SOCIAL PROOF ── */
+    .proof-bar {
+      display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 2.5rem;
+      padding: 2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .proof-item { text-align: center; }
+    .proof-item .num { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+    .proof-item .label { font-size: .8rem; color: var(--muted); margin-top: .1rem; }
+
+    /* ── SECTIONS ── */
+    section { padding: 5rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label { font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: .8rem; }
+    h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+    h2 .grad { background: linear-gradient(135deg, #60a5fa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .section-sub { color: var(--muted); font-size: 1.05rem; margin-top: .8rem; max-width: 560px; }
+
+    /* ── FEATURES GRID ── */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.8rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-3px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p { color: var(--muted); font-size: .9rem; }
+    .feature-tag { display: inline-block; background: rgba(59,130,246,.12); color: var(--accent); border-radius: 4px; font-size: .7rem; font-weight: 700; padding: .15rem .5rem; margin-top: .6rem; }
+
+    /* ── HOW IT WORKS ── */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+    .step { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.8rem; position: relative; }
+    .step-num { width: 36px; height: 36px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .9rem; margin-bottom: 1rem; }
+    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .step p { color: var(--muted); font-size: .88rem; }
+
+    /* ── PRICING ── */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 3rem; align-items: start; }
+    .pricing-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2rem; position: relative;
+    }
+    .pricing-card.featured {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(59,130,246,.08), rgba(6,182,212,.05));
+    }
+    .featured-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff; font-size: .7rem; font-weight: 700;
+      padding: .25rem .8rem; border-radius: 999px; white-space: nowrap;
+    }
+    .plan-name { font-size: .85rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .plan-price { font-size: 2.5rem; font-weight: 900; margin: .5rem 0; line-height: 1; }
+    .plan-price span { font-size: 1rem; font-weight: 500; color: var(--muted); }
+    .plan-desc { color: var(--muted); font-size: .88rem; margin-bottom: 1.5rem; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.8rem; }
+    .plan-features li { display: flex; align-items: flex-start; gap: .6rem; font-size: .88rem; color: var(--muted); }
+    .plan-features li .check { color: var(--green); font-size: 1rem; flex-shrink: 0; }
+    .plan-features li .x { color: #ef4444; font-size: 1rem; flex-shrink: 0; }
+
+    /* ── TERMINAL DEMO ── */
+    .terminal {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; font-family: 'Courier New', monospace;
+      font-size: .85rem; margin-top: 3rem; overflow-x: auto;
+    }
+    .terminal .line { margin-bottom: .3rem; }
+    .terminal .prompt { color: var(--green); }
+    .terminal .cmd { color: var(--text); }
+    .terminal .out { color: var(--muted); }
+    .terminal .success { color: var(--green); }
+    .terminal .url { color: var(--accent); }
+
+    /* ── EMAIL FORM ── */
+    .email-section {
+      background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(6,182,212,.08));
+      border: 1px solid rgba(59,130,246,.2); border-radius: 24px;
+      padding: 3.5rem 2rem; text-align: center; margin-top: 5rem;
+    }
+    .email-form { display: flex; gap: .75rem; max-width: 480px; margin: 2rem auto 0; flex-wrap: wrap; justify-content: center; }
+    .email-input {
+      flex: 1; min-width: 220px;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      border-radius: 10px; padding: .75rem 1rem; color: var(--text); font-size: .95rem;
+      outline: none; transition: border-color .2s;
+    }
+    .email-input:focus { border-color: var(--accent); }
+    .email-input::placeholder { color: var(--muted); }
+    .form-note { color: var(--muted); font-size: .78rem; margin-top: .75rem; }
+
+    /* ── SPONSORS ── */
+    .sponsors-section { text-align: center; }
+    .sponsor-tiers { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem; }
+    .sponsor-tier {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem 1.8rem; min-width: 180px; text-align: center;
+      transition: border-color .2s, transform .2s; cursor: pointer;
+    }
+    .sponsor-tier:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .sponsor-tier .price { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .sponsor-tier .period { font-size: .8rem; color: var(--muted); }
+    .sponsor-tier .tier-name { font-size: .9rem; font-weight: 600; margin-top: .4rem; }
+    .sponsor-tier .tier-desc { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+
+    /* ── FAQ ── */
+    .faq { display: flex; flex-direction: column; gap: 1rem; margin-top: 2.5rem; max-width: 720px; }
+    .faq-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+    .faq-q { padding: 1.2rem 1.5rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    .faq-q::after { content: '+'; font-size: 1.2rem; color: var(--accent); transition: transform .2s; }
+    .faq-item.open .faq-q::after { content: '−'; }
+    .faq-a { display: none; padding: 0 1.5rem 1.2rem; color: var(--muted); font-size: .92rem; line-height: 1.7; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem; text-align: center;
+      color: var(--muted); font-size: .85rem;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+    .footer-links { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: .8rem 1rem; }
+      .nav-links { display: none; }
+      h1 { font-size: 2rem; }
+      .proof-bar { gap: 1.5rem; }
+    }
+
+    /* ── ANPD WARNING BOX ── */
+    .warning-box {
+      background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+      border-radius: 12px; padding: 1.2rem 1.5rem;
+      display: flex; gap: 1rem; align-items: flex-start; margin-top: 3rem;
+    }
+    .warning-box .icon { font-size: 1.5rem; flex-shrink: 0; }
+    .warning-box p { font-size: .9rem; color: #fca5a5; line-height: 1.6; }
+    .warning-box strong { color: #f87171; }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="#" class="nav-logo">🛡️ LGPD <span>Sentinel</span> AI</a>
+  <div class="nav-links">
+    <a href="#funcionalidades">Funcionalidades</a>
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="#faq">FAQ</a>
+    <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai" class="btn btn-ghost" target="_blank">⭐ GitHub</a>
+    <a href="#comecar" class="btn btn-primary">Começar grátis</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="badge"><span class="dot"></span> Open Source · IA 100% Local · Gratuito</div>
+  <h1>Auditoria LGPD em minutos,<br/><span class="grad">sem enviar dados para a nuvem.</span></h1>
+  <p class="hero-sub">
+    O LGPD Sentinel AI gera Data Mapping, RIPD/DPIA e respostas de titulares usando IA rodando 100% na sua máquina.
+    Nenhum dado pessoal sai do seu servidor.
+  </p>
+  <div class="hero-ctas">
+    <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai" class="btn btn-primary btn-lg" target="_blank">
+      🚀 Instalar grátis
+    </a>
+    <a href="#como-funciona" class="btn btn-ghost btn-lg">Ver como funciona →</a>
+  </div>
+
+  <div class="warning-box" style="max-width:680px; margin-top:3rem;">
+    <span class="icon">⚠️</span>
+    <p>A ANPD pode aplicar multas de até <strong>R$ 50 milhões</strong> por infração à LGPD.
+    Uma consultoria de adequação custa em média <strong>R$ 8.000–R$ 30.000</strong>.
+    O LGPD Sentinel AI automatiza isso — <strong>open source e gratuito.</strong></p>
+  </div>
+</section>
+
+<!-- ── PROOF BAR ── -->
+<div class="proof-bar">
+  <div class="proof-item">
+    <div class="num">100%</div>
+    <div class="label">Local — zero cloud</div>
+  </div>
+  <div class="proof-item">
+    <div class="num">3 min</div>
+    <div class="label">Instalação via Docker</div>
+  </div>
+  <div class="proof-item">
+    <div class="num">Apache 2.0</div>
+    <div class="label">Licença open source</div>
+  </div>
+  <div class="proof-item">
+    <div class="num">FastAPI</div>
+    <div class="label">+ Streamlit + Ollama</div>
+  </div>
+  <div class="proof-item">
+    <div class="num">29</div>
+    <div class="label">Testes passando</div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section id="funcionalidades">
+  <div class="container">
+    <div class="section-label">Funcionalidades</div>
+    <h2>Tudo que um DPO precisa,<br/><span class="grad">em um só lugar.</span></h2>
+    <p class="section-sub">De data mapping a respostas de titulares — automatizado com IA local.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Data Mapping Automático</h3>
+        <p>Cole seus dados e receba classificação (pessoal/sensível), base legal sugerida e score de conformidade 0–100.</p>
+        <span class="feature-tag">Art. 5, 7, 11</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>DPIA / RIPD Completo</h3>
+        <p>Gera Relatório de Impacto com riscos identificados, medidas de mitigação e PDF pronto para ANPD.</p>
+        <span class="feature-tag">Art. 38</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Direitos dos Titulares (DSR)</h3>
+        <p>Analisa os 8 direitos do titular e gera resposta oficial dentro do prazo legal automaticamente.</p>
+        <span class="feature-tag">Art. 18</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📂</div>
+        <h3>Histórico e Relatórios</h3>
+        <p>Todas as auditorias salvas localmente com filtros, gráficos e exportação em PDF para governança.</p>
+        <span class="feature-tag">Exportação PDF</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔑</div>
+        <h3>API REST Completa</h3>
+        <p>Integre no seu sistema via API com autenticação por API key. Documentação Swagger incluída.</p>
+        <span class="feature-tag">FastAPI + OpenAPI</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>IA 100% Local</h3>
+        <p>Roda com llama3.1 via Ollama. Nenhum dado pessoal é enviado para OpenAI, Gemini ou qualquer nuvem.</p>
+        <span class="feature-tag">Ollama + llama3.1</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="como-funciona" style="background: var(--bg2);">
+  <div class="container">
+    <div class="section-label">Como funciona</div>
+    <h2>Do git clone ao<br/><span class="grad">relatório em 3 minutos.</span></h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Clone e suba com Docker</h3>
+        <p>Três comandos e tudo está rodando localmente — API, frontend e IA incluídos.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Acesse o dashboard</h3>
+        <p>Interface web completa em <code style="color:var(--accent)">localhost:8501</code>. Sem cadastro, sem cartão.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Execute uma auditoria</h3>
+        <p>Cole seus dados ou descreva um tratamento. A IA analisa e gera o relatório em segundos.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Exporte o PDF</h3>
+        <p>Relatório formatado e pronto para apresentar ao jurídico, DPO ou ANPD.</p>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="line"><span class="prompt">$</span> <span class="cmd">git clone https://github.com/ldsjunior-ui/lgpd-sentinel-ai.git</span></div>
+      <div class="line"><span class="out">Cloning into 'lgpd-sentinel-ai'...</span></div>
+      <div class="line"><span class="prompt">$</span> <span class="cmd">cd lgpd-sentinel-ai && cp .env.example .env</span></div>
+      <div class="line"><span class="prompt">$</span> <span class="cmd">docker compose up</span></div>
+      <div class="line"><span class="out">✔ Container lgpd-api      Started</span></div>
+      <div class="line"><span class="out">✔ Container lgpd-frontend Started</span></div>
+      <div class="line"><span class="out">✔ Container lgpd-ollama   Started</span></div>
+      <div class="line" style="margin-top:.8rem;"><span class="success">🚀 Frontend:</span> <span class="url">http://localhost:8501</span></div>
+      <div class="line"><span class="success">📖 API Docs:</span> <span class="url">http://localhost:8000/docs</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="precos">
+  <div class="container">
+    <div class="section-label">Planos</div>
+    <h2>Comece grátis.<br/><span class="grad">Escale quando precisar.</span></h2>
+    <p class="section-sub">Self-hosted sempre será gratuito. O plano Pro financia o desenvolvimento contínuo.</p>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="plan-name">Free · Self-Hosted</div>
+        <div class="plan-price">R$0 <span>/ sempre</span></div>
+        <div class="plan-desc">Roda na sua máquina. Sem limites de uso.</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Data Mapping ilimitado</li>
+          <li><span class="check">✓</span> RIPD/DPIA ilimitado</li>
+          <li><span class="check">✓</span> DSR ilimitado</li>
+          <li><span class="check">✓</span> IA local (llama3.1)</li>
+          <li><span class="check">✓</span> Exportação PDF</li>
+          <li><span class="check">✓</span> API REST</li>
+          <li><span class="x">✗</span> Suporte prioritário</li>
+          <li><span class="x">✗</span> Versão cloud gerenciada</li>
+        </ul>
+        <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai" class="btn btn-ghost" style="width:100%; justify-content:center;" target="_blank">⭐ Ver no GitHub</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured">
+        <div class="featured-badge">⭐ Mais popular</div>
+        <div class="plan-name">Pro · Cloud</div>
+        <div class="plan-price">R$97 <span>/ mês</span></div>
+        <div class="plan-desc">Versão gerenciada — sem instalar nada.</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Tudo do Free</li>
+          <li><span class="check">✓</span> Dashboard na nuvem</li>
+          <li><span class="check">✓</span> Backups automáticos</li>
+          <li><span class="check">✓</span> 7 dias trial grátis</li>
+          <li><span class="check">✓</span> Suporte prioritário</li>
+          <li><span class="check">✓</span> Atualizações automáticas</li>
+          <li><span class="check">✓</span> Multi-empresa</li>
+          <li><span class="check">✓</span> SLA 99.9%</li>
+        </ul>
+        <a href="#early-access" class="btn btn-primary" style="width:100%; justify-content:center;">🚀 Early access grátis</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">Custom</div>
+        <div class="plan-desc">Para consultorias e empresas com múltiplas filiais.</div>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> Tudo do Pro</li>
+          <li><span class="check">✓</span> White-label</li>
+          <li><span class="check">✓</span> Deploy no seu servidor</li>
+          <li><span class="check">✓</span> Treinamento da equipe</li>
+          <li><span class="check">✓</span> SLA customizado</li>
+          <li><span class="check">✓</span> NDA incluso</li>
+        </ul>
+        <a href="mailto:ldsjunior.ui@gmail.com" class="btn btn-ghost" style="width:100%; justify-content:center;">Falar com equipe</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SPONSORS ── -->
+<section id="sponsors" style="background: var(--bg2);">
+  <div class="container sponsors-section">
+    <div class="section-label">GitHub Sponsors</div>
+    <h2>Apoie o projeto.<br/><span class="grad">Mantenha o open source vivo.</span></h2>
+    <p class="section-sub" style="margin:0 auto; text-align:center;">O LGPD Sentinel AI é gratuito para sempre. Se ele te economizou tempo ou dinheiro, considere apoiar.</p>
+
+    <div class="sponsor-tiers">
+      <a href="https://github.com/sponsors/ldsjunior-ui" class="sponsor-tier" target="_blank" style="text-decoration:none; color:inherit;">
+        <div class="price">$5</div>
+        <div class="period">/mês</div>
+        <div class="tier-name">☕ Café</div>
+        <div class="tier-desc">Apoiador individual</div>
+      </a>
+      <a href="https://github.com/sponsors/ldsjunior-ui" class="sponsor-tier" target="_blank" style="text-decoration:none; color:inherit; border-color:var(--accent);">
+        <div class="price">$25</div>
+        <div class="period">/mês</div>
+        <div class="tier-name">🚀 Empresa pequena</div>
+        <div class="tier-desc">Logo no README</div>
+      </a>
+      <a href="https://github.com/sponsors/ldsjunior-ui" class="sponsor-tier" target="_blank" style="text-decoration:none; color:inherit;">
+        <div class="price">$99</div>
+        <div class="period">/mês</div>
+        <div class="tier-name">🏢 Enterprise</div>
+        <div class="tier-desc">Logo + suporte direto</div>
+      </a>
+    </div>
+
+    <div style="margin-top:2rem;">
+      <a href="https://github.com/sponsors/ldsjunior-ui" class="btn btn-green btn-lg" target="_blank">❤️ Tornar-se sponsor</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── EMAIL CAPTURE ── -->
+<section id="early-access">
+  <div class="container">
+    <div class="email-section" id="comecar">
+      <div class="section-label">Early Access</div>
+      <h2>Entre na lista de espera<br/><span class="grad">do LGPD Sentinel Cloud.</span></h2>
+      <p style="color:var(--muted); margin-top:.8rem; font-size:1rem;">Seja notificado quando o plano Pro cloud for lançado.<br/>Primeiros 100 inscritos ganham 3 meses grátis.</p>
+      <form class="email-form" id="emailForm">
+        <input type="email" class="email-input" placeholder="seu@email.com" required id="emailInput" />
+        <button type="submit" class="btn btn-primary btn-lg">Quero acesso →</button>
+      </form>
+      <p class="form-note">Sem spam. Apenas updates do projeto. Cancele quando quiser.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq" style="background: var(--bg2);">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2>Perguntas frequentes</h2>
+
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">O LGPD Sentinel AI envia meus dados para algum servidor?</div>
+        <div class="faq-a">Não. A IA roda 100% localmente via Ollama + llama3.1. Nenhum dado pessoal ou sensível é enviado para servidores externos. Tudo fica na sua máquina.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Preciso de conhecimento técnico para instalar?</div>
+        <div class="faq-a">Você precisa ter Docker instalado. Com 3 comandos (git clone, cp .env.example .env, docker compose up) tudo já está rodando. O README tem um guia passo a passo.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">A ferramenta substitui um DPO ou advogado?</div>
+        <div class="faq-a">Não. O LGPD Sentinel AI é uma ferramenta de apoio que automatiza tarefas operacionais de compliance. Para decisões jurídicas complexas, consulte um profissional qualificado.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">O projeto é realmente gratuito?</div>
+        <div class="faq-a">Sim. A versão self-hosted é e sempre será gratuita, licença Apache 2.0. Você pode usar, modificar e distribuir livremente. O plano Pro (cloud gerenciado) é opcional e financia o desenvolvimento contínuo.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Quais artigos da LGPD a ferramenta cobre?</div>
+        <div class="faq-a">Data Mapping (Art. 5, 7, 11), RIPD/DPIA (Art. 38), Direitos dos Titulares — Art. 18 (acesso, correção, exclusão, portabilidade, oposição e mais). Cobertura está sendo expandida continuamente.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Posso contribuir com o projeto?</div>
+        <div class="faq-a">Sim! O projeto está aberto a PRs, issues e sugestões. Veja o CONTRIBUTING.md no GitHub para guidelines de contribuição.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ── -->
+<section style="text-align:center; padding: 5rem 1.5rem;">
+  <div class="container">
+    <h2 style="font-size:clamp(1.8rem,3.5vw,2.8rem)">Pronto para sua primeira auditoria<br/><span class="grad">LGPD em 3 minutos?</span></h2>
+    <p style="color:var(--muted); margin-top:1rem; font-size:1.05rem;">Open source. Gratuito. Seus dados ficam com você.</p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:2.5rem;">
+      <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai" class="btn btn-primary btn-lg" target="_blank">⭐ Ver no GitHub</a>
+      <a href="#early-access" class="btn btn-ghost btn-lg">☁️ Early access cloud</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai" target="_blank">GitHub</a>
+    <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai/blob/main/LICENSE" target="_blank">Apache 2.0</a>
+    <a href="https://github.com/ldsjunior-ui/lgpd-sentinel-ai/blob/main/CONTRIBUTING.md" target="_blank">Contribuir</a>
+    <a href="https://github.com/sponsors/ldsjunior-ui" target="_blank">Sponsors</a>
+    <a href="mailto:ldsjunior.ui@gmail.com">Contato</a>
+  </div>
+  <p>© 2026 LGPD Sentinel AI · Open Source · Apache 2.0 · Feito no 🇧🇷</p>
+</footer>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.parentElement;
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Email form — Brevo integration
+  document.getElementById('emailForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value;
+    const btn = this.querySelector('button');
+    btn.textContent = 'Aguarde...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.brevo.com/v3/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': 'BREVO_API_KEY_PLACEHOLDER'
+        },
+        body: JSON.stringify({
+          email: email,
+          listIds: [BREVO_LIST_ID_PLACEHOLDER],
+          updateEnabled: true,
+          attributes: { SOURCE: 'landing-page' }
+        })
+      });
+
+      if (res.ok || res.status === 204) {
+        btn.textContent = '✅ Inscrito!';
+        btn.style.background = 'var(--green)';
+        document.getElementById('emailInput').value = '';
+      } else {
+        throw new Error('API error');
+      }
+    } catch(err) {
+      // Fallback: open mailto
+      btn.textContent = '→ Quero acesso';
+      btn.disabled = false;
+      window.location.href = `mailto:ldsjunior.ui@gmail.com?subject=Early Access LGPD Sentinel Cloud&body=Email: ${email}`;
+    }
+  });
+</script>
+
+</body>
+</html>
