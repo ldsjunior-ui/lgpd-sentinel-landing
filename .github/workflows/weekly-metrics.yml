@@ -1,0 +1,112 @@
+name: LGPD Sentinel — Weekly Metrics Post
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'   # every Monday at 12:00 UTC (09:00 Brasília)
+  workflow_dispatch:
+
+jobs:
+  post-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch metrics and post to Twitter + LinkedIn
+        env:
+          GH_TOKEN:               ${{ secrets.GITHUB_TOKEN }}
+          TWITTER_API_KEY:        ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET:     ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN:   ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET:  ${{ secrets.TWITTER_ACCESS_SECRET }}
+          BREVO_API_KEY:          ${{ secrets.BREVO_API_KEY }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request, urllib.error, hmac, hashlib, time, base64
+          from urllib.parse import quote
+          from datetime import datetime, timezone
+
+          GH = os.environ["GH_TOKEN"]
+          BREVO = os.environ.get("BREVO_API_KEY", "")
+
+          def gh_get(path):
+              req = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {GH}",
+                      "User-Agent": "lgpd-sentinel-bot"
+                  }
+              )
+              with urllib.request.urlopen(req, timeout=15) as r:
+                  return json.loads(r.read())
+
+          # ── GitHub metrics ───────────────────────────────────────────────
+          repo   = gh_get("/repos/ldsjunior-ui/lgpd-sentinel-ai")
+          stars  = repo["stargazers_count"]
+          forks  = repo["forks_count"]
+          issues = repo["open_issues_count"]
+          watchers = repo["subscribers_count"]
+
+          # ── Brevo list size ──────────────────────────────────────────────
+          leads = 0
+          if BREVO:
+              try:
+                  req = urllib.request.Request(
+                      "https://api.brevo.com/v3/contacts/lists/9",
+                      headers={"accept":"application/json","api-key":BREVO}
+                  )
+                  with urllib.request.urlopen(req, timeout=10) as r:
+                      leads = json.loads(r.read()).get("uniqueSubscribers", 0)
+              except:
+                  pass
+
+          week = datetime.now(timezone.utc).strftime("%d/%m/%Y")
+          tweet = (
+              f"📊 LGPD Sentinel AI — métricas da semana ({week})\n\n"
+              f"⭐ {stars} GitHub stars\n"
+              f"🍴 {forks} forks\n"
+              f"👁️ {watchers} watchers\n"
+              f"📧 {leads} leads na lista\n\n"
+              f"A ferramenta open source de auditoria LGPD com IA local segue crescendo.\n\n"
+              f"🔗 https://github.com/ldsjunior-ui/lgpd-sentinel-ai\n\n"
+              f"#LGPD #OpenSource #IA #Compliance #Brasil"
+          )
+          print(f"Tweet:\n{tweet}\n")
+
+          # ── Post to Twitter ──────────────────────────────────────────────
+          AK  = os.environ.get("TWITTER_API_KEY")
+          AS_ = os.environ.get("TWITTER_API_SECRET")
+          AT  = os.environ.get("TWITTER_ACCESS_TOKEN")
+          ATS = os.environ.get("TWITTER_ACCESS_SECRET")
+
+          if not all([AK, AS_, AT, ATS]):
+              print("Twitter secrets not set — skipping.")
+          else:
+              def oauth1_header(method, url, ak, aks, at, ats):
+                  ts = str(int(time.time()))
+                  nonce = base64.b64encode(os.urandom(16)).decode().rstrip("=")
+                  oauth = {
+                      "oauth_consumer_key": ak, "oauth_nonce": nonce,
+                      "oauth_signature_method": "HMAC-SHA1", "oauth_timestamp": ts,
+                      "oauth_token": at, "oauth_version": "1.0",
+                  }
+                  sorted_params = "&".join(f"{quote(k,'')  }={quote(str(v),'')}" for k, v in sorted(oauth.items()))
+                  base = f"{method}&{quote(url,'')}&{quote(sorted_params,'')}"
+                  key = f"{quote(aks,'')}&{quote(ats,'')}"
+                  sig = base64.b64encode(hmac.new(key.encode(), base.encode(), hashlib.sha1).digest()).decode()
+                  oauth["oauth_signature"] = sig
+                  return "OAuth " + ", ".join(f'{quote(k,"")}="{quote(str(v),"")}"' for k, v in sorted(oauth.items()))
+
+              url = "https://api.twitter.com/2/tweets"
+              req2 = urllib.request.Request(url,
+                  data=json.dumps({"text": tweet}).encode(),
+                  headers={"Authorization": oauth1_header("POST", url, AK, AS_, AT, ATS),
+                           "Content-Type": "application/json"},
+                  method="POST")
+              try:
+                  with urllib.request.urlopen(req2, timeout=20) as r:
+                      resp = json.loads(r.read())
+                      print(f"✅ Twitter: {resp['data']['id']}")
+              except urllib.error.HTTPError as e:
+                  print(f"Twitter error {e.code}: {e.read().decode()}")
+
+          print("\nDone ✓")
+          PYEOF
