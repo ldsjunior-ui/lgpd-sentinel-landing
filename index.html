@@ -598,31 +598,43 @@
     });
   });
 
-  // Email form — zero-dependency capture via mailto
-  // Contatos são adicionados à lista Brevo pelo GitHub Actions subscriber-add.yml
-  // (workflow_dispatch disparado manualmente ou via GitHub CLI)
-  document.getElementById('emailForm').addEventListener('submit', function(e) {
+  // Email form — posts to Brevo subscription form endpoint (no API key needed)
+  // Form ID: LGPD Sentinel Early Access → list #9 (LGPD Sentinel Leads)
+  const _fa = 'https://4951be8e.sibforms.com/serve/MUIFAJ3Bwl_rtZKCnCPlhiXF9HINEwmcrak6cdgFCN375NaeHpf6jsZY1vyd3f16iZ9M1IZGByyJopuAWNAoLIYSPsBcAxJr9l7M1PI8j69a_bjB6uQfDKx4BMUEeDnQH8i4fN-4CE2DJwDwLSIRxOEznlhUE65B5cBt_Rpnr90XeuM7uIcOJe7ctjAasgXMcds7n-4iOjXws4Tenw==';
+
+  document.getElementById('emailForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const email = document.getElementById('emailInput').value.trim();
     if (!email) return;
     const btn = this.querySelector('button');
+    btn.textContent = 'Aguarde…';
+    btn.disabled = true;
 
-    // Open mailto — leads chegam à caixa de entrada e são adicionados ao Brevo
-    const subject = encodeURIComponent('Early Access — LGPD Sentinel Cloud');
-    const body    = encodeURIComponent(
-      `Quero receber atualizações do LGPD Sentinel AI.\n\nEmail: ${email}`
-    );
-    window.open(`mailto:leonardobergonzi20@gmail.com?subject=${subject}&body=${body}`);
+    try {
+      const fd = new FormData();
+      fd.append('EMAIL', email);
+      fd.append('email_address_check', '');
+      fd.append('locale', 'pt');
+      fd.append('html_type', 'simple');
 
-    btn.textContent = '✅ Obrigado! Abrindo seu e-mail…';
-    btn.style.background = 'var(--green)';
-    document.getElementById('emailInput').value = '';
+      // no-cors: we can't read the response but the request reaches Brevo
+      await fetch(_fa, { method: 'POST', body: fd, mode: 'no-cors' });
 
-    // Reset button after 4s
-    setTimeout(() => {
-      btn.textContent = '→ Quero acesso antecipado';
+      btn.textContent = '✅ Inscrito! Verifique seu e-mail.';
+      btn.style.background = 'var(--green)';
+      document.getElementById('emailInput').value = '';
+    } catch (err) {
+      btn.textContent = '⚠ Tente novamente';
       btn.style.background = '';
-    }, 4000);
+      btn.disabled = false;
+      return;
+    }
+
+    setTimeout(() => {
+      btn.textContent = 'Quero acesso →';
+      btn.style.background = '';
+      btn.disabled = false;
+    }, 5000);
   });
 </script>
 
